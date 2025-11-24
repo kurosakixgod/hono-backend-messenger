@@ -1,0 +1,160 @@
+import type { Context } from 'hono'
+import type { CreateUser } from '@/types'
+import { generateToken, getCurrentUser } from '@/middlewares/auth'
+import { usersService } from '@/services'
+import { hashPassword, verifyPassword } from '@/utils'
+
+export async function registerUser(c: Context) {
+  try {
+    const { username, password, display_name }: CreateUser = await c.req.json()
+
+    if (password.length < 8) {
+      return c.json({ error: 'Пароль должен быть не менее 8 символов' }, 400)
+    }
+
+    if (username.length < 3 || username.length > 50) {
+      return c.json({ error: 'Имя пользователя должно быть от 3 до 50 символов' }, 400)
+    }
+
+    const [isUserExists] = await usersService.getUserByUsername(username)
+
+    if (isUserExists) {
+      return c.json({ error: 'Пользователь с таким именем уже существует' }, 400)
+    }
+
+    const passwordHash = await hashPassword(password)
+
+    const [user] = await usersService.createUser({ username, password: passwordHash, display_name })
+
+    // Генерируем JWT токен
+    const token = await generateToken({
+      username: user.username,
+      displayName: user.display_name ?? '',
+    })
+
+    // Возвращаем данные пользователя без пароля и токен
+    const { password_hash, ...userWithoutPassword } = user
+
+    return c.json({
+      user: userWithoutPassword,
+      token,
+      message: 'Пользователь успешно зарегистрирован',
+    }, 201)
+  }
+  catch (error) {
+    return c.json({ error: 'Ошибка при регистрации пользователя', details: error }, 500)
+  }
+}
+
+export async function loginUser(c: Context) {
+  try {
+    const body: CreateUser = await c.req.json()
+
+    const { username, password } = body
+
+    if (!username || !password) {
+      return c.json({ error: 'Имя пользователя и пароль обязательны' }, 400)
+    }
+
+    const [user] = await usersService.getUserByUsername(username)
+
+    if (!user) {
+      return c.json({ error: 'Неверное имя пользователя или пароль' }, 401)
+    }
+
+    const isPasswordValid = await verifyPassword(user.password_hash, password)
+
+    if (!isPasswordValid) {
+      return c.json({ error: 'Неверное имя пользователя или пароль' }, 401)
+    }
+
+    const token = await generateToken({
+      username: user.username,
+      displayName: user.display_name ?? '',
+    })
+
+    const { password_hash, ...userWithoutPassword } = user
+
+    return c.json({
+      user: userWithoutPassword,
+      token,
+      message: 'Вход выполнен успешно',
+    }, 200)
+  }
+  catch (error) {
+    return c.json({ error: 'Ошибка при входе', details: error }, 500)
+  }
+}
+
+export async function getUsers(c: Context) {
+  try {
+    const users = await usersService.getUsers()
+
+    // Убираем пароли из ответа
+    const usersWithoutPasswords = users.map(({ password_hash, ...user }) => user)
+
+    return c.json(usersWithoutPasswords, 200)
+  }
+  catch (error) {
+    return c.json({ error: 'Ошибка при получении пользователей', details: error }, 500)
+  }
+}
+
+export async function getUserById(c: Context) {
+  try {
+    const { id } = c.req.param()
+    const [user] = await usersService.getUserById(id)
+
+    if (!user) {
+      return c.json({ error: 'Пользователь не найден' }, 404)
+    }
+
+    const { password_hash, ...userWithoutPassword } = user
+
+    return c.json(userWithoutPassword, 200)
+  }
+  catch (error) {
+    return c.json({ error: 'Ошибка при получении пользователя', details: error }, 500)
+  }
+}
+
+export async function getCurrentUserProfile(c: Context) {
+  try {
+    const currentUser = getCurrentUser(c)
+
+    if (!currentUser) {
+      return c.json({ error: 'Пользователь не авторизован' }, 401)
+    }
+
+    const [user] = await usersService.getUserByUsername(currentUser.username)
+
+    if (!user) {
+      return c.json({ error: 'Пользователь не найден' }, 404)
+    }
+
+    const { password_hash, ...userWithoutPassword } = user
+
+    return c.json(userWithoutPassword, 200)
+  }
+  catch (error) {
+    return c.json({ error: 'Ошибка при получении профиля', details: error }, 500)
+  }
+}
+
+export async function createUser(c: Context) {
+  try {
+    const body: CreateUser = await c.req.json()
+    const [user] = await usersService.createUser(body)
+
+    if (!user) {
+      return c.json({ error: 'Ошибка при создании пользователя' }, 500)
+    }
+
+    const { password_hash, ...userWithoutPassword } = user
+
+    return c.json(userWithoutPassword, 201)
+  }
+  catch (error) {
+    return c.json({ error: 'Ошибка при создании пользователя', details: error }, 500)
+  }
+}

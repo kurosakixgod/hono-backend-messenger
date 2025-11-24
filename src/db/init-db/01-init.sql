@@ -14,7 +14,7 @@ CREATE TABLE IF NOT EXISTS users (
     display_name VARCHAR(100),
     avatar_url TEXT,
     status user_status DEFAULT 'offline',
-    last_seen TIMESTAMP,
+    last_seen TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );

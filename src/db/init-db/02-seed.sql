@@ -1,10 +1,10 @@
 -- Тестовые данные для разработки
 
 -- Создание тестовых пользователей
-INSERT INTO users (username, email, password_hash, display_name, status) VALUES
-('john_doe', 'john@example.com', '$argon2id$v=19$m=65536,t=3,p=4$testHash1', 'Джон Доу', 'online'),
-('jane_smith', 'jane@example.com', '$argon2id$v=19$m=65536,t=3,p=4$testHash2', 'Джейн Смит', 'online'),
-('bob_wilson', 'bob@example.com', '$argon2id$v=19$m=65536,t=3,p=4$testHash3', 'Боб Уилсон', 'offline')
+INSERT INTO users (username, password_hash, display_name, status) VALUES
+('john_doe', '$argon2id$v=19$m=65536,t=3,p=4$testHash1', 'Джон Доу', 'online'),
+('jane_smith', '$argon2id$v=19$m=65536,t=3,p=4$testHash2', 'Джейн Смит', 'online'),
+('bob_wilson', '$argon2id$v=19$m=65536,t=3,p=4$testHash3', 'Боб Уилсон', 'offline')
 ON CONFLICT (username) DO NOTHING;
 
 -- Создание тестового приватного чата

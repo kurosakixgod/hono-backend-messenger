@@ -1,9 +1,7 @@
-version: '3.8'
-
 services:
   # PostgreSQL Database
   postgres:
-    image: postgres:17-alpine
+    image: postgres:17.4
     container_name: messenger_postgres
     restart: unless-stopped
     ports:
@@ -24,27 +22,28 @@ services:
     networks:
       - messenger_network
 
-  # Hono Backend
-  backend:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    container_name: messenger_backend
-    restart: unless-stopped
-    ports:
-      - "3000:3000"
-    environment:
-      NODE_ENV: development
-      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/messenger_db
-      PORT: 3000
-    depends_on:
-      postgres:
-        condition: service_healthy
-    volumes:
-      - ./src:/app/src
-      - ./package.json:/app/package.json
-    networks:
-      - messenger_network
+  # # Hono Backend
+  # backend:
+  #   build:
+  #     context: .
+  #     dockerfile: Dockerfile
+  #   container_name: messenger_backend
+  #   restart: unless-stopped
+  #   ports:
+  #     - "3000:3000"
+  #   environment:
+  #     NODE_ENV: development
+  #     DATABASE_URL: postgresql://postgres:postgres@postgres:5432/messenger_db
+  #     PORT: 3000
+  #   depends_on:
+  #     postgres:
+  #       condition: service_healthy
+  #   volumes:
+  #     - ./src:/app/src
+  #     - ./package.json:/app/package.json
+  #     - /app/node_modules
+  #   networks:
+  #     - messenger_network
 
 volumes:
   postgres_data:
