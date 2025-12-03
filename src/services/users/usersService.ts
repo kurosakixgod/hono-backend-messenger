@@ -1,30 +1,30 @@
 import type { CreateUser, User } from '@/types'
-import { query } from '@/db'
+import { db } from '@/db'
 
-export async function getUsers() {
-  const users = await query<User>('SELECT * FROM users')
-  return users
+export async function getUsers(): Promise<User[]> {
+  const users = await db`SELECT * FROM users`
+  return users as User[]
 }
 
-export async function getUserById(id: string) {
-  const user = await query<User>('SELECT * FROM users WHERE id = $1', [id])
-  return user
+export async function getUserById(id: string): Promise<User | null> {
+  const users = await db`SELECT * FROM users WHERE id = ${id}`
+  return (users[0] as User) ?? null
 }
 
-export async function getUserByUsername(username: string) {
-  const user = await query<User>('SELECT * FROM users WHERE username = $1', [username])
-  return user
+export async function getUserByUsername(username: string): Promise<User | null> {
+  const users = await db`SELECT * FROM users WHERE username = ${username}`
+  return (users[0] as User) ?? null
 }
 
-export async function createUser(user: CreateUser) {
-  const newUser = await query<User>(
-    'INSERT INTO users (username, password_hash, display_name, avatar_url) VALUES ($1, $2, $3, $4) RETURNING *',
-    [user.username, user.password_hash, user.display_name, user.avatar_url],
-  )
-
-  return newUser
+export async function createUser(user: CreateUser): Promise<User> {
+  const [newUser] = await db`
+    INSERT INTO users (username, password_hash, display_name, avatar_url) 
+    VALUES (${user.username}, ${user.password_hash}, ${user.display_name ?? null}, ${user.avatar_url ?? null}) 
+    RETURNING *
+  `
+  return newUser as User
 }
 
-export async function deleteUser(id: string) {
-  await query('DELETE FROM users WHERE id = $1', [id])
+export async function deleteUser(id: string): Promise<void> {
+  await db`DELETE FROM users WHERE id = ${id}`
 }

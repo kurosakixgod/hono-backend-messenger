@@ -9,13 +9,11 @@
   },
   "dependencies": {
     "argon2": "^0.44.0",
-    "hono": "^4.10.6",
-    "pg": "^8.16.3"
+    "hono": "^4.10.6"
   },
   "devDependencies": {
     "@antfu/eslint-config": "^6.2.0",
     "@types/bun": "latest",
-    "@types/pg": "^8.15.6",
     "eslint": "^9.39.1"
   }
 }

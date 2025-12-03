@@ -2,8 +2,7 @@ import type { Context, Next } from 'hono'
 import { bearerAuth } from 'hono/bearer-auth'
 import { sign, verify } from 'hono/jwt'
 
-// eslint-disable-next-line node/prefer-global/process
-const JWT_SECRET = process.env.JWT_SECRET as string
+const JWT_SECRET = Bun.env.JWT_SECRET
 
 export interface JWTPayload {
   displayName: string

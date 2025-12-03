@@ -1,23 +1,14 @@
-import type { QueryResultRow } from 'pg'
-import { Pool } from 'pg'
+import { SQL } from 'bun'
 
-const pool = new Pool({
-  // eslint-disable-next-line node/prefer-global/process
-  connectionString: process.env.DATABASE_URL,
+export const db = new SQL({
+  url: Bun.env.DATABASE_URL,
+  max: 20,
+  idleTimeout: 30,
+  connectionTimeout: 30,
+  onconnect: () => {
+    Bun.stdout.write('✅ База данных подключена')
+  },
+  onclose: () => {
+    Bun.stdout.write('🔌 Соединение с базой данных закрыто')
+  },
 })
-
-pool.on('connect', () => {
-  // eslint-disable-next-line no-console
-  console.log('✅ База данных подключена')
-})
-
-pool.on('error', (err) => {
-  console.error('❌ Ошибка подключения к базе данных:', err)
-  // eslint-disable-next-line node/prefer-global/process
-  process.exit(-1)
-})
-
-export async function query<T extends QueryResultRow>(sql: string, params: any[] = []): Promise<T[]> {
-  const result = await pool.query<T>(sql, params)
-  return result.rows as T[]
-}

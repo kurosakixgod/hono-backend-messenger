@@ -16,15 +16,15 @@ export async function registerUser(c: Context) {
       return c.json({ error: 'Имя пользователя должно быть от 3 до 50 символов' }, 400)
     }
 
-    const [isUserExists] = await usersService.getUserByUsername(username)
+    const existingUser = await usersService.getUserByUsername(username)
 
-    if (isUserExists) {
+    if (existingUser) {
       return c.json({ error: 'Пользователь с таким именем уже существует' }, 400)
     }
 
     const passwordHash = await hashPassword(password)
 
-    const [user] = await usersService.createUser({ username, password_hash: passwordHash, display_name })
+    const user = await usersService.createUser({ username, password_hash: passwordHash, display_name })
 
     const token = await generateToken({
       username: user.username,
@@ -52,7 +52,7 @@ export async function loginUser(c: Context) {
       return c.json({ error: 'Имя пользователя и пароль обязательны' }, 400)
     }
 
-    const [user] = await usersService.getUserByUsername(username)
+    const user = await usersService.getUserByUsername(username)
 
     if (!user) {
       return c.json({ error: 'Неверное имя пользователя или пароль' }, 401)
@@ -98,7 +98,7 @@ export async function getUsers(c: Context) {
 export async function getUserById(c: Context) {
   try {
     const { id } = c.req.param()
-    const [user] = await usersService.getUserById(id)
+    const user = await usersService.getUserById(id)
 
     if (!user) {
       return c.json({ error: 'Пользователь не найден' }, 404)
@@ -121,7 +121,7 @@ export async function getCurrentUserProfile(c: Context) {
       return c.json({ error: 'Пользователь не авторизован' }, 401)
     }
 
-    const [user] = await usersService.getUserByUsername(currentUser.username)
+    const user = await usersService.getUserByUsername(currentUser.username)
 
     if (!user) {
       return c.json({ error: 'Пользователь не найден' }, 404)
