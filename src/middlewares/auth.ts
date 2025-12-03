@@ -3,7 +3,7 @@ import { bearerAuth } from 'hono/bearer-auth'
 import { sign, verify } from 'hono/jwt'
 
 // eslint-disable-next-line node/prefer-global/process
-const JWT_SECRET = process.env.JWT_SECRET || 'default-secret-change-in-production'
+const JWT_SECRET = process.env.JWT_SECRET as string
 
 export interface JWTPayload {
   displayName: string

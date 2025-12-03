@@ -1,12 +1,12 @@
 import type { Context } from 'hono'
-import type { CreateUser, LoginUser, RegisterUser } from '@/types'
+import type { LoginUserRequest, RegisterUserRequest } from '@/types'
 import { generateToken, getCurrentUser } from '@/middlewares/auth'
 import { usersService } from '@/services'
 import { hashPassword, verifyPassword } from '@/utils'
 
 export async function registerUser(c: Context) {
   try {
-    const { username, password, display_name }: RegisterUser = await c.req.json()
+    const { username, password, display_name }: RegisterUserRequest = await c.req.json()
 
     if (password.length < 8) {
       return c.json({ error: 'Пароль должен быть не менее 8 символов' }, 400)
@@ -46,7 +46,7 @@ export async function registerUser(c: Context) {
 
 export async function loginUser(c: Context) {
   try {
-    const { username, password }: LoginUser = await c.req.json()
+    const { username, password }: LoginUserRequest = await c.req.json()
 
     if (!username || !password) {
       return c.json({ error: 'Имя пользователя и пароль обязательны' }, 400)
@@ -133,23 +133,5 @@ export async function getCurrentUserProfile(c: Context) {
   }
   catch {
     return c.json({ error: 'Ошибка при получении профиля' }, 500)
-  }
-}
-
-export async function createUser(c: Context) {
-  try {
-    const body: CreateUser = await c.req.json()
-    const [user] = await usersService.createUser(body)
-
-    if (!user) {
-      return c.json({ error: 'Ошибка при создании пользователя' }, 500)
-    }
-
-    const { password_hash, ...userWithoutPassword } = user
-
-    return c.json(userWithoutPassword, 201)
-  }
-  catch {
-    return c.json({ error: 'Ошибка при создании пользователя' }, 500)
   }
 }
