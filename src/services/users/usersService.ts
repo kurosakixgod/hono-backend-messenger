@@ -19,7 +19,7 @@ export async function getUserByUsername(username: string) {
 export async function createUser(user: CreateUser) {
   const newUser = await query<User>(
     'INSERT INTO users (username, password_hash, display_name, avatar_url) VALUES ($1, $2, $3, $4) RETURNING *',
-    [user.username, user.password, user.display_name, user.avatar_url],
+    [user.username, user.password_hash, user.display_name, user.avatar_url],
   )
 
   return newUser

@@ -19,7 +19,19 @@ export interface User {
 
 export interface CreateUser {
   username: string
+  password_hash: string
+  display_name?: string
+  avatar_url?: string
+}
+
+export interface RegisterUser {
+  username: string
   password: string
   display_name?: string
   avatar_url?: string
+}
+
+export interface LoginUser {
+  username: string
+  password: string
 }

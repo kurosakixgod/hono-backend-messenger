@@ -1,12 +1,12 @@
 import type { Context } from 'hono'
-import type { CreateUser } from '@/types'
+import type { CreateUser, LoginUser, RegisterUser } from '@/types'
 import { generateToken, getCurrentUser } from '@/middlewares/auth'
 import { usersService } from '@/services'
 import { hashPassword, verifyPassword } from '@/utils'
 
 export async function registerUser(c: Context) {
   try {
-    const { username, password, display_name }: CreateUser = await c.req.json()
+    const { username, password, display_name }: RegisterUser = await c.req.json()
 
     if (password.length < 8) {
       return c.json({ error: 'Пароль должен быть не менее 8 символов' }, 400)
@@ -24,15 +24,13 @@ export async function registerUser(c: Context) {
 
     const passwordHash = await hashPassword(password)
 
-    const [user] = await usersService.createUser({ username, password: passwordHash, display_name })
+    const [user] = await usersService.createUser({ username, password_hash: passwordHash, display_name })
 
-    // Генерируем JWT токен
     const token = await generateToken({
       username: user.username,
       displayName: user.display_name ?? '',
     })
 
-    // Возвращаем данные пользователя без пароля и токен
     const { password_hash, ...userWithoutPassword } = user
 
     return c.json({
@@ -41,16 +39,14 @@ export async function registerUser(c: Context) {
       message: 'Пользователь успешно зарегистрирован',
     }, 201)
   }
-  catch (error) {
-    return c.json({ error: 'Ошибка при регистрации пользователя', details: error }, 500)
+  catch {
+    return c.json({ error: 'Ошибка при регистрации пользователя' }, 500)
   }
 }
 
 export async function loginUser(c: Context) {
   try {
-    const body: CreateUser = await c.req.json()
-
-    const { username, password } = body
+    const { username, password }: LoginUser = await c.req.json()
 
     if (!username || !password) {
       return c.json({ error: 'Имя пользователя и пароль обязательны' }, 400)
@@ -81,8 +77,8 @@ export async function loginUser(c: Context) {
       message: 'Вход выполнен успешно',
     }, 200)
   }
-  catch (error) {
-    return c.json({ error: 'Ошибка при входе', details: error }, 500)
+  catch {
+    return c.json({ error: 'Ошибка при входе' }, 500)
   }
 }
 
@@ -90,13 +86,12 @@ export async function getUsers(c: Context) {
   try {
     const users = await usersService.getUsers()
 
-    // Убираем пароли из ответа
     const usersWithoutPasswords = users.map(({ password_hash, ...user }) => user)
 
     return c.json(usersWithoutPasswords, 200)
   }
-  catch (error) {
-    return c.json({ error: 'Ошибка при получении пользователей', details: error }, 500)
+  catch {
+    return c.json({ error: 'Ошибка при получении пользователей' }, 500)
   }
 }
 
@@ -113,8 +108,8 @@ export async function getUserById(c: Context) {
 
     return c.json(userWithoutPassword, 200)
   }
-  catch (error) {
-    return c.json({ error: 'Ошибка при получении пользователя', details: error }, 500)
+  catch {
+    return c.json({ error: 'Ошибка при получении пользователя' }, 500)
   }
 }
 
@@ -136,8 +131,8 @@ export async function getCurrentUserProfile(c: Context) {
 
     return c.json(userWithoutPassword, 200)
   }
-  catch (error) {
-    return c.json({ error: 'Ошибка при получении профиля', details: error }, 500)
+  catch {
+    return c.json({ error: 'Ошибка при получении профиля' }, 500)
   }
 }
 
@@ -154,7 +149,7 @@ export async function createUser(c: Context) {
 
     return c.json(userWithoutPassword, 201)
   }
-  catch (error) {
-    return c.json({ error: 'Ошибка при создании пользователя', details: error }, 500)
+  catch {
+    return c.json({ error: 'Ошибка при создании пользователя' }, 500)
   }
 }
