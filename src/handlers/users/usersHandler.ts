@@ -1,6 +1,17 @@
 import type { Context } from 'hono'
 import type { LoginUserRequest, RegisterUserRequest } from '@/types'
-import { generateToken, getCurrentUser } from '@/middlewares/auth'
+import { randomBytes } from 'node:crypto'
+import { deleteCookie, getCookie, setCookie } from 'hono/cookie'
+import {
+  deleteAllUserRefreshTokens,
+  deleteRefreshToken,
+  generateAccessToken,
+  generateRefreshToken,
+  getCurrentUser,
+  isRefreshTokenValid,
+  saveRefreshToken,
+  verifyRefreshToken,
+} from '@/middlewares/auth'
 import { usersService } from '@/services'
 import { hashPassword, verifyPassword } from '@/utils'
 
@@ -26,16 +37,35 @@ export async function registerUser(c: Context) {
 
     const user = await usersService.createUser({ username, password_hash: passwordHash, display_name })
 
-    const token = await generateToken({
+    const accessToken = await generateAccessToken({
+      userId: user.id,
       username: user.username,
       displayName: user.display_name ?? '',
+    })
+
+    const tokenId = randomBytes(32).toString('hex')
+    const refreshToken = await generateRefreshToken({
+      userId: user.id,
+      username: user.username,
+      tokenId,
+    })
+
+    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
+    await saveRefreshToken(user.id, refreshToken, expiresAt)
+
+    setCookie(c, 'refreshToken', refreshToken, {
+      httpOnly: true,
+      secure: Bun.env.NODE_ENV === 'production',
+      sameSite: 'Strict',
+      maxAge: 7 * 24 * 60 * 60,
+      path: '/',
     })
 
     const { password_hash, ...userWithoutPassword } = user
 
     return c.json({
       user: userWithoutPassword,
-      token,
+      accessToken,
       message: 'Пользователь успешно зарегистрирован',
     }, 201)
   }
@@ -64,21 +94,121 @@ export async function loginUser(c: Context) {
       return c.json({ error: 'Неверное имя пользователя или пароль' }, 401)
     }
 
-    const token = await generateToken({
+    const accessToken = await generateAccessToken({
+      userId: user.id,
       username: user.username,
       displayName: user.display_name ?? '',
+    })
+
+    const tokenId = randomBytes(32).toString('hex')
+    const refreshToken = await generateRefreshToken({
+      userId: user.id,
+      username: user.username,
+      tokenId,
+    })
+
+    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
+    await saveRefreshToken(user.id, refreshToken, expiresAt)
+
+    setCookie(c, 'refreshToken', refreshToken, {
+      httpOnly: true, // Недоступен для JavaScript
+      secure: Bun.env.NODE_ENV === 'production', // Только HTTPS в продакшене
+      sameSite: 'Strict', // Защита от CSRF
+      maxAge: 7 * 24 * 60 * 60,
+      path: '/',
     })
 
     const { password_hash, ...userWithoutPassword } = user
 
     return c.json({
       user: userWithoutPassword,
-      token,
+      accessToken,
       message: 'Вход выполнен успешно',
     }, 200)
   }
   catch {
     return c.json({ error: 'Ошибка при входе' }, 500)
+  }
+}
+
+export async function refreshAccessToken(c: Context) {
+  try {
+    const refreshToken = getCookie(c, 'refreshToken')
+
+    if (!refreshToken) {
+      return c.json({ error: 'Refresh токен отсутствует' }, 401)
+    }
+
+    const payload = await verifyRefreshToken(refreshToken)
+
+    if (!payload) {
+      return c.json({ error: 'Невалидный refresh токен' }, 401)
+    }
+
+    const isValid = await isRefreshTokenValid(refreshToken)
+
+    if (!isValid) {
+      return c.json({ error: 'Refresh токен истёк или не существует' }, 401)
+    }
+
+    const user = await usersService.getUserById(String(payload.userId))
+
+    if (!user) {
+      return c.json({ error: 'Пользователь не найден' }, 404)
+    }
+
+    const newAccessToken = await generateAccessToken({
+      userId: user.id,
+      username: user.username,
+      displayName: user.display_name ?? '',
+    })
+
+    return c.json({
+      accessToken: newAccessToken,
+      message: 'Access токен успешно обновлён',
+    }, 200)
+  }
+  catch {
+    return c.json({ error: 'Ошибка при обновлении токена' }, 500)
+  }
+}
+
+export async function logoutUser(c: Context) {
+  try {
+    const refreshToken = getCookie(c, 'refreshToken')
+
+    if (refreshToken) {
+      await deleteRefreshToken(refreshToken)
+    }
+
+    deleteCookie(c, 'refreshToken')
+
+    return c.json({
+      message: 'Выход выполнен успешно',
+    }, 200)
+  }
+  catch {
+    return c.json({ error: 'Ошибка при выходе' }, 500)
+  }
+}
+
+export async function logoutAllDevices(c: Context) {
+  try {
+    const currentUser = getCurrentUser(c)
+
+    if (!currentUser) {
+      return c.json({ error: 'Пользователь не авторизован' }, 401)
+    }
+
+    await deleteAllUserRefreshTokens(currentUser.userId)
+    deleteCookie(c, 'refreshToken')
+
+    return c.json({
+      message: 'Выход со всех устройств выполнен успешно',
+    }, 200)
+  }
+  catch {
+    return c.json({ error: 'Ошибка при выходе со всех устройств' }, 500)
   }
 }
 

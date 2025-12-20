@@ -7,9 +7,12 @@ export const usersRoutes = new Hono().basePath('/users')
 // Публичные маршруты
 usersRoutes.post('/login', usersHandler.loginUser)
 usersRoutes.post('/register', usersHandler.registerUser)
+usersRoutes.post('/refresh', usersHandler.refreshAccessToken)
+usersRoutes.post('/logout', usersHandler.logoutUser)
 
 // Защищенные маршруты (требуют авторизацию)
 usersRoutes.use('/*', authMiddleware)
+usersRoutes.post('/logout-all', usersHandler.logoutAllDevices)
 usersRoutes.get('/me', usersHandler.getCurrentUserProfile)
 usersRoutes.get('/', usersHandler.getUsers)
 usersRoutes.get('/:id', usersHandler.getUserById)

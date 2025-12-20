@@ -80,4 +80,19 @@ CREATE TRIGGER update_chats_updated_at BEFORE UPDATE ON chats
 CREATE TRIGGER update_messages_updated_at BEFORE UPDATE ON messages
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+-- Создание таблицы refresh токенов
+CREATE TABLE IF NOT EXISTS refresh_tokens (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    token VARCHAR(512) UNIQUE NOT NULL,
+    expires_at TIMESTAMP NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(user_id, token)
+);
+
+-- Создание индекса для быстрого поиска токенов
+CREATE INDEX idx_refresh_tokens_user_id ON refresh_tokens(user_id);
+CREATE INDEX idx_refresh_tokens_token ON refresh_tokens(token);
+CREATE INDEX idx_refresh_tokens_expires_at ON refresh_tokens(expires_at);
+
 

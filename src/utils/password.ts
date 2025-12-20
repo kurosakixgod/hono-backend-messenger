@@ -1,12 +1,10 @@
-import { argon2id, hash, verify } from 'argon2'
-
 export async function hashPassword(password: string): Promise<string> {
   try {
-    const passwordHash = await hash(password, {
-      type: argon2id,
+    const passwordHash = await Bun.password.hash(password, {
+      algorithm: 'argon2id',
       memoryCost: 2 ** 16,
       timeCost: 3,
-      parallelism: 1,
+
     })
     return passwordHash
   }
@@ -17,7 +15,7 @@ export async function hashPassword(password: string): Promise<string> {
 
 export async function verifyPassword(hash: string, password: string): Promise<boolean> {
   try {
-    return await verify(hash, password)
+    return await Bun.password.verify(password, hash)
   }
   catch {
     return false
