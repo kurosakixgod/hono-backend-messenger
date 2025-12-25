@@ -1,10 +1,11 @@
 import { Hono } from 'hono'
 import { cleanupExpiredTokens } from './middlewares/auth'
-import { usersRoutes } from './routes'
+import { chatsRoutes, usersRoutes } from './routes'
 
 const app = new Hono()
 
 app.route('/', usersRoutes)
+app.route('/', chatsRoutes)
 
 app.get('/', (c) => {
   return c.text('Hello Hono!')
