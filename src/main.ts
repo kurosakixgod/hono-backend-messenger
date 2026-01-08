@@ -7,7 +7,7 @@ const app = new Hono()
 app.route('/', usersRoutes)
 app.route('/', chatsRoutes)
 
-app.get('/', (c) => {
+app.get('/', async (c) => {
   return c.text('Hello Hono!')
 });
 

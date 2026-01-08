@@ -36,17 +36,24 @@ export interface ChatMemberWithUser {
   avatar_url?: string
 }
 
+export interface LastMessage {
+  id: number
+  content: string
+  sender_id: number
+  sender_username: string
+  created_at: Date
+}
+
 export interface ChatWithMembers extends Chat {
   members: ChatMemberWithUser[]
-  last_message?: {
-    id: number
-    content: string
-    sender_id: number
-    sender_username: string
-    created_at: Date
-  }
+  last_message?: LastMessage
 }
 
 export interface CreatePrivateChatRequest {
   user_id: number
+}
+
+export interface GetChatsQuery {
+  limit?: number
+  offset?: number
 }

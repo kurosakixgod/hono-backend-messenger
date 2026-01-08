@@ -15,7 +15,7 @@ import {
 import { usersService } from '@/services'
 import { hashPassword, verifyPassword } from '@/utils'
 
-export async function registerUser(c: Context) {
+export async function signUpUser(c: Context) {
   try {
     const { username, password, display_name }: RegisterUserRequest = await c.req.json()
 
@@ -74,7 +74,7 @@ export async function registerUser(c: Context) {
   }
 }
 
-export async function loginUser(c: Context) {
+export async function signInUser(c: Context) {
   try {
     const { username, password }: LoginUserRequest = await c.req.json()
 

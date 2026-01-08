@@ -1,10 +1,13 @@
 import type { Context } from 'hono'
-import type { CreatePrivateChatRequest } from '@/types'
 import { getCurrentUser } from '@/middlewares/auth'
 import { chatsService, usersService } from '@/services'
 
+const DEFAULT_LIMIT = 50
+const MAX_LIMIT = 100
+
 /**
- * Получение всех чатов текущего пользователя
+ * Получение всех чатов текущего пользователя с пагинацией
+ * Query params: limit (default 50, max 100), offset (default 0)
  */
 export async function getUserChats(c: Context) {
   try {
@@ -14,9 +17,36 @@ export async function getUserChats(c: Context) {
       return c.json({ error: 'Пользователь не авторизован' }, 401)
     }
 
-    const chats = await chatsService.getUserChats(currentUser.userId)
+    const limitParam = c.req.query('limit')
+    const offsetParam = c.req.query('offset')
 
-    return c.json(chats, 200)
+    let limit = DEFAULT_LIMIT
+    let offset = 0
+
+    if (limitParam) {
+      const parsedLimit = Number.parseInt(limitParam, 10)
+      if (!Number.isNaN(parsedLimit) && parsedLimit > 0) {
+        limit = Math.min(parsedLimit, MAX_LIMIT)
+      }
+    }
+
+    if (offsetParam) {
+      const parsedOffset = Number.parseInt(offsetParam, 10)
+      if (!Number.isNaN(parsedOffset) && parsedOffset >= 0) {
+        offset = parsedOffset
+      }
+    }
+
+    const chats = await chatsService.getUserChats(currentUser.userId, limit, offset)
+
+    return c.json({
+      data: chats,
+      pagination: {
+        limit,
+        offset,
+        count: chats.length,
+      },
+    }, 200)
   }
   catch (error) {
     console.error('Ошибка при получении чатов:', error)
@@ -58,6 +88,7 @@ export async function getChatById(c: Context) {
 
 /**
  * Создание приватного чата с другим пользователем
+ * Возвращает 201 если чат создан, 200 если уже существовал
  */
 export async function createPrivateChat(c: Context) {
   try {
@@ -67,29 +98,35 @@ export async function createPrivateChat(c: Context) {
       return c.json({ error: 'Пользователь не авторизован' }, 401)
     }
 
-    const { user_id }: CreatePrivateChatRequest = await c.req.json()
+    const body = await c.req.json()
+    const user_id = body?.user_id
 
-    if (!user_id) {
+    if (user_id === undefined || user_id === null) {
       return c.json({ error: 'ID пользователя обязателен' }, 400)
+    }
+
+    if (typeof user_id !== 'number' || !Number.isInteger(user_id) || user_id <= 0) {
+      return c.json({ error: 'ID пользователя должен быть положительным целым числом' }, 400)
     }
 
     if (user_id === currentUser.userId) {
       return c.json({ error: 'Нельзя создать чат с самим собой' }, 400)
     }
 
-    // Проверяем существование пользователя
     const targetUser = await usersService.getUserById(String(user_id))
 
     if (!targetUser) {
       return c.json({ error: 'Пользователь не найден' }, 404)
     }
 
-    const chat = await chatsService.getOrCreatePrivateChat(currentUser.userId, user_id)
+    const { chat, created } = await chatsService.getOrCreatePrivateChat(currentUser.userId, user_id)
 
-    return c.json({
-      chat,
-      message: 'Приватный чат успешно создан или получен',
-    }, 200)
+    const statusCode = created ? 201 : 200
+    const message = created
+      ? 'Приватный чат успешно создан'
+      : 'Приватный чат уже существует'
+
+    return c.json({ chat, message }, statusCode)
   }
   catch (error) {
     console.error('Ошибка при создании приватного чата:', error)
