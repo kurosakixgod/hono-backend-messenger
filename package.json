@@ -2,8 +2,6 @@
   "name": "hono",
   "scripts": {
     "dev": "bun run --hot src/main.ts",
-    "migrate:refresh-tokens": "bun run src/migrate-refresh-tokens.ts",
-    "test:refresh-tokens": "bun run src/test-refresh-tokens.ts",
     "lint": "eslint",
     "lint:fix": "eslint --fix",
     "format": "prettier --write .",

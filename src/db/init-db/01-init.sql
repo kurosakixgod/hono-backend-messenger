@@ -95,4 +95,17 @@ CREATE INDEX idx_refresh_tokens_user_id ON refresh_tokens(user_id);
 CREATE INDEX idx_refresh_tokens_token ON refresh_tokens(token);
 CREATE INDEX idx_refresh_tokens_expires_at ON refresh_tokens(expires_at);
 
+-- Индексы для оптимизации запросов чатов
 
+-- Индексы для таблицы chat_members
+CREATE INDEX idx_chat_members_user_id ON chat_members(user_id);
+CREATE INDEX idx_chat_members_chat_id ON chat_members(chat_id);
+
+-- Индексы для таблицы messages
+CREATE INDEX idx_messages_chat_id ON messages(chat_id);
+CREATE INDEX idx_messages_sender_id ON messages(sender_id);
+CREATE INDEX idx_messages_chat_last ON messages(chat_id, is_deleted, created_at DESC);
+
+-- Индексы для таблицы chats
+CREATE INDEX idx_chats_updated_at ON chats(updated_at DESC);
+CREATE INDEX idx_chats_chat_type ON chats(chat_type);

@@ -5,8 +5,8 @@ import { authMiddleware } from '@/middlewares/auth'
 export const usersRoutes = new Hono().basePath('/users')
 
 // Публичные маршруты
-usersRoutes.post('/login', usersHandler.loginUser)
-usersRoutes.post('/register', usersHandler.registerUser)
+usersRoutes.post('/sign-in', usersHandler.signInUser)
+usersRoutes.post('/sign-up', usersHandler.signUpUser)
 usersRoutes.post('/refresh', usersHandler.refreshAccessToken)
 usersRoutes.post('/logout', usersHandler.logoutUser)
 
